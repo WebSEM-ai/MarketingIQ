@@ -148,7 +148,7 @@ Fii concis și acționabil.`,
             },
             scan: {
               url: normalizedUrl,
-              content: scrapedContent.slice(0, 10000),
+              content: "",
               seoData: seo,
               scannedAt: new Date().toISOString(),
               success: contentResult.status === "fulfilled",

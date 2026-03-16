@@ -44,21 +44,24 @@ export default function CompetitorsPage() {
       const decoder = new TextDecoder();
       let buffer = "";
       let result: CompetitorAnalysis | null = null;
+      let streamError: string | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() || "";
 
-        for (const line of lines) {
-          const match = line.match(/^data: (.+)$/);
-          if (!match) continue;
+        for (const chunk of chunks) {
+          const trimmed = chunk.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+
+          const jsonStr = trimmed.slice(6);
 
           try {
-            const event = JSON.parse(match[1]);
+            const event = JSON.parse(jsonStr);
 
             if (event.event === "progress") {
               setProgress({
@@ -69,13 +72,15 @@ export default function CompetitorsPage() {
             } else if (event.event === "result") {
               result = event.analysis as CompetitorAnalysis;
             } else if (event.event === "error") {
-              throw new Error(event.error);
+              streamError = event.error;
             }
-          } catch (e) {
-            if (e instanceof Error && e.message !== match[1]) throw e;
+          } catch {
+            // Incomplete JSON chunk, skip
           }
         }
       }
+
+      if (streamError) throw new Error(streamError);
 
       return result;
     },
