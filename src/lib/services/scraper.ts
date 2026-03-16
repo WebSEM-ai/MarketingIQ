@@ -4,9 +4,9 @@ import type { SearchResult, SEOData, RankingData } from "@/lib/types/competitors
 export async function scrapeCompetitor(url: string): Promise<string> {
   const result = await callTool("web-scraping", "scrape_page", {
     url,
-    render_js: true,
+    render_js: false,
     return_page_markdown: true,
-  });
+  }, 12000);
 
   if (typeof result === "string") return result;
 
@@ -39,21 +39,29 @@ export async function searchCompetitors(
 }
 
 export async function checkSEO(url: string): Promise<SEOData> {
-  const result = await callTool("onpage-seo", "single_onpage_checker", { url });
+  const result = await callTool("onpage-seo", "single_onpage_checker", { url }, 15000);
 
   const data = result as Record<string, unknown>;
+  const metrics = (data.metrics || {}) as Record<string, unknown>;
+  const score = (data.score || {}) as Record<string, unknown>;
+  const issues = (data.issues || []) as Array<Record<string, unknown>>;
 
   return {
-    title: data.title as string | undefined,
-    description: data.description as string | undefined,
-    h1: data.h1 as string[] | undefined,
-    h2: data.h2 as string[] | undefined,
-    wordCount: data.word_count as number | undefined,
-    images: data.images as number | undefined,
-    links: data.links as { internal: number; external: number } | undefined,
-    loadTime: data.load_time as number | undefined,
-    score: data.score as number | undefined,
-    issues: data.issues as string[] | undefined,
+    title: (metrics.title as string) || undefined,
+    description: (metrics.metaDescription as string) || undefined,
+    h1: (metrics.h1Tags as string[]) || undefined,
+    h2: (metrics.h2Tags as string[]) || undefined,
+    wordCount: (metrics.wordCount as number) || undefined,
+    images: (metrics.imageCount as number) || undefined,
+    links: {
+      internal: (metrics.internalLinks as number) || 0,
+      external: (metrics.externalLinks as number) || 0,
+    },
+    loadTime: (metrics.loadTime as number) || undefined,
+    score: (score.overall as number) || undefined,
+    issues: issues.map(
+      (i) => `[${(i.severity as string) || "info"}] ${(i.message as string) || ""}`
+    ),
   };
 }
 

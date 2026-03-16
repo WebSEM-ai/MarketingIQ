@@ -15,7 +15,8 @@ interface MCPResponse {
 export async function callTool(
   service: string,
   toolName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  timeoutMs = 15000
 ): Promise<unknown> {
   const token = process.env.MCP360_TOKEN;
   if (!token) {
@@ -24,19 +25,33 @@ export async function callTool(
 
   const url = `${MCP360_BASE}/${service}/mcp?token=${token}`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "tools/call",
-      params: {
-        name: toolName,
-        arguments: args,
-      },
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: toolName,
+          arguments: args,
+        },
+      }),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`MCP360 timeout: ${service}/${toolName} (${timeoutMs}ms)`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`MCP360 HTTP error: ${response.status} ${response.statusText}`);

@@ -63,10 +63,15 @@ export async function POST(request: Request) {
         const seo: SEOData =
           seoResult.status === "fulfilled" ? seoResult.value : {};
 
+        const scrapeOk = contentResult.status === "fulfilled";
+        const seoOk = seoResult.status === "fulfilled";
+
         sendEvent(controller, encoder, "progress", {
           step: 2,
           total: 4,
-          message: "Site scanat. Verific pozițiile pe keywords...",
+          message: seoOk
+            ? `SEO analizat${scrapeOk ? " + conținut extras" : " (scrape timeout, continui)"}. Verific keywords...`
+            : "Verific pozițiile pe keywords...",
         });
 
         // Step 2: Rankings
