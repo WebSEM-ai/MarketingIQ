@@ -6,6 +6,7 @@ import RelatedQueries from "@/components/trends/RelatedQueries";
 import RelatedTopics from "@/components/trends/RelatedTopics";
 import RegionMap from "@/components/trends/RegionMap";
 import TrendInsights from "@/components/trends/TrendInsights";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { TrendAnalysis } from "@/lib/types/trends";
 
 interface ScanProgress {
@@ -28,13 +29,13 @@ const COUNTRY_OPTIONS = [
 ];
 
 export default function TrendsPage() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = usePersistedState("trends-query", "");
   const [timeframe, setTimeframe] = useState("today 12-m");
   const [country, setCountry] = useState("RO");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
-  const [analysis, setAnalysis] = useState<TrendAnalysis | null>(null);
+  const [analysis, setAnalysis] = usePersistedState<TrendAnalysis | null>("trends-analysis", null);
 
   const processStream = useCallback(
     async (q: string, tf: string, co: string) => {

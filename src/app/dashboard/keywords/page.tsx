@@ -6,6 +6,7 @@ import SuggestionList from "@/components/keywords/SuggestionList";
 import ClusterView from "@/components/keywords/ClusterView";
 import RankingResults from "@/components/keywords/RankingResults";
 import KeywordInsights from "@/components/keywords/KeywordInsights";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { KeywordAnalysis } from "@/lib/types/keywords";
 
 interface ScanProgress {
@@ -15,13 +16,13 @@ interface ScanProgress {
 }
 
 export default function KeywordsPage() {
-  const [seed, setSeed] = useState("");
-  const [domain, setDomain] = useState("");
+  const [seed, setSeed] = usePersistedState("keywords-seed", "");
+  const [domain, setDomain] = usePersistedState("keywords-domain", "");
   const [country, setCountry] = useState("RO");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
-  const [analysis, setAnalysis] = useState<KeywordAnalysis | null>(null);
+  const [analysis, setAnalysis] = usePersistedState<KeywordAnalysis | null>("keywords-analysis", null);
 
   const processStream = useCallback(
     async (s: string, d: string, co: string) => {

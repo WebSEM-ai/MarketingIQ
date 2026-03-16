@@ -7,6 +7,7 @@ import CompetitorSearch from "@/components/competitors/CompetitorSearch";
 import SEOReport from "@/components/competitors/SEOReport";
 import AIInsights from "@/components/competitors/AIInsights";
 import RankingTable from "@/components/competitors/RankingTable";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { CompetitorAnalysis } from "@/lib/types/competitors";
 
 interface ScanProgress {
@@ -16,8 +17,8 @@ interface ScanProgress {
 }
 
 export default function CompetitorsPage() {
-  const [analyses, setAnalyses] = useState<CompetitorAnalysis[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [analyses, setAnalyses] = usePersistedState<CompetitorAnalysis[]>("competitors-analyses", []);
+  const [selectedId, setSelectedId] = usePersistedState<string | null>("competitors-selected", null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanningId, setScanningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

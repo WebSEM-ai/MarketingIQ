@@ -6,6 +6,7 @@ import ContentCalendar from "@/components/content/ContentCalendar";
 import TopicClusters from "@/components/content/TopicClusters";
 import GapAnalysis from "@/components/content/GapAnalysis";
 import StrategyInsights from "@/components/content/StrategyInsights";
+import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { ContentInput, ContentStrategy } from "@/lib/types/content";
 
 interface ScanProgress {
@@ -15,7 +16,7 @@ interface ScanProgress {
 }
 
 export default function ContentPage() {
-  const [input, setInput] = useState<ContentInput>({
+  const [input, setInput] = usePersistedState<ContentInput>("content-input", {
     business: "",
     audience: "",
     goals: "",
@@ -25,7 +26,7 @@ export default function ContentPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
-  const [strategy, setStrategy] = useState<ContentStrategy | null>(null);
+  const [strategy, setStrategy] = usePersistedState<ContentStrategy | null>("content-strategy", null);
 
   const processStream = useCallback(async (data: ContentInput) => {
     const res = await fetch("/api/content/generate", {
