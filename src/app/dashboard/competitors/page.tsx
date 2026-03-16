@@ -9,33 +9,89 @@ import AIInsights from "@/components/competitors/AIInsights";
 import RankingTable from "@/components/competitors/RankingTable";
 import type { CompetitorAnalysis } from "@/lib/types/competitors";
 
+interface ScanProgress {
+  step: number;
+  total: number;
+  message: string;
+}
+
 export default function CompetitorsPage() {
   const [analyses, setAnalyses] = useState<CompetitorAnalysis[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanningId, setScanningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ScanProgress | null>(null);
 
   const selected = analyses.find((a) => a.competitor.id === selectedId) || null;
+
+  const processScanStream = useCallback(
+    async (url: string, keywords: string[]) => {
+      const res = await fetch("/api/competitors/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, keywords }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Eroare la scanare.");
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("Nu pot citi stream-ul.");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let result: CompetitorAnalysis | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const match = line.match(/^data: (.+)$/);
+          if (!match) continue;
+
+          try {
+            const event = JSON.parse(match[1]);
+
+            if (event.event === "progress") {
+              setProgress({
+                step: event.step,
+                total: event.total,
+                message: event.message,
+              });
+            } else if (event.event === "result") {
+              result = event.analysis as CompetitorAnalysis;
+            } else if (event.event === "error") {
+              throw new Error(event.error);
+            }
+          } catch (e) {
+            if (e instanceof Error && e.message !== match[1]) throw e;
+          }
+        }
+      }
+
+      return result;
+    },
+    []
+  );
 
   const scanCompetitor = useCallback(
     async (url: string, keywords: string[]) => {
       setIsScanning(true);
       setError(null);
+      setProgress({ step: 0, total: 4, message: "Inițializez scanarea..." });
 
       try {
-        const res = await fetch("/api/competitors/scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, keywords }),
-        });
+        const analysis = await processScanStream(url, keywords);
+        if (!analysis) throw new Error("Nu s-a primit rezultatul.");
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Eroare la scanare.");
-        }
-
-        const analysis: CompetitorAnalysis = await res.json();
         setAnalyses((prev) => {
           const existing = prev.findIndex(
             (a) => a.competitor.url === analysis.competitor.url
@@ -52,32 +108,25 @@ export default function CompetitorsPage() {
         setError(err instanceof Error ? err.message : "Eroare necunoscută.");
       } finally {
         setIsScanning(false);
+        setProgress(null);
       }
     },
-    []
+    [processScanStream]
   );
 
   const rescanCompetitor = useCallback(
     async (analysis: CompetitorAnalysis) => {
       setScanningId(analysis.competitor.id);
       setError(null);
+      setProgress({ step: 0, total: 4, message: "Re-scanez..." });
 
       try {
-        const res = await fetch("/api/competitors/scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: analysis.competitor.url,
-            keywords: analysis.rankings?.map((r) => r.keyword) || [],
-          }),
-        });
+        const updated = await processScanStream(
+          analysis.competitor.url,
+          analysis.rankings?.map((r) => r.keyword) || []
+        );
+        if (!updated) throw new Error("Nu s-a primit rezultatul.");
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Eroare la re-scanare.");
-        }
-
-        const updated: CompetitorAnalysis = await res.json();
         setAnalyses((prev) =>
           prev.map((a) =>
             a.competitor.url === updated.competitor.url ? updated : a
@@ -88,9 +137,10 @@ export default function CompetitorsPage() {
         setError(err instanceof Error ? err.message : "Eroare necunoscută.");
       } finally {
         setScanningId(null);
+        setProgress(null);
       }
     },
-    []
+    [processScanStream]
   );
 
   const handleAddFromSearch = useCallback(
@@ -128,9 +178,35 @@ export default function CompetitorsPage() {
         )}
       </div>
 
+      {/* Progress Bar */}
+      {progress && (
+        <div className="flex-shrink-0 bg-gray-900/80 border-b border-gray-800/50 px-5 py-2.5">
+          <div className="flex items-center gap-3">
+            <svg className="animate-spin h-4 w-4 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-300">{progress.message}</span>
+                <span className="text-xs text-gray-500">
+                  {progress.step}/{progress.total}
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(progress.step / progress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Grid */}
       <div className="flex-1 grid grid-cols-[380px_1fr] min-h-0">
-        {/* LEFT PANEL — Competitor List + Add + Search */}
+        {/* LEFT PANEL */}
         <div className="border-r border-gray-800/50 panel-scroll p-4 space-y-4">
           <AddCompetitorForm onScan={scanCompetitor} isLoading={isScanning} />
 
@@ -155,11 +231,10 @@ export default function CompetitorsPage() {
           <CompetitorSearch onAdd={handleAddFromSearch} />
         </div>
 
-        {/* RIGHT PANEL — Selected Competitor Details */}
+        {/* RIGHT PANEL */}
         <div className="panel-scroll p-4">
           {selected ? (
             <div className="space-y-4 max-w-3xl">
-              {/* Competitor header */}
               <div className="flex items-center gap-3 pb-3 border-b border-gray-800/30">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                   <span className="text-amber-500 text-sm font-bold">
@@ -181,15 +256,12 @@ export default function CompetitorsPage() {
                 </div>
               </div>
 
-              {/* SEO Report */}
               <SEOReport seo={selected.seo} />
 
-              {/* Rankings */}
               {selected.rankings && selected.rankings.length > 0 && (
                 <RankingTable rankings={selected.rankings} />
               )}
 
-              {/* AI Insights */}
               {selected.aiInsights && (
                 <AIInsights insights={selected.aiInsights} />
               )}
