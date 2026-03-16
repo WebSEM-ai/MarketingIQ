@@ -47,6 +47,10 @@ export default function ContentPage() {
     let buffer = "";
     let result: ContentStrategy | null = null;
     let streamError: string | null = null;
+    // Collect partial results as fallback
+    let partialCalendar: ContentStrategy["calendar"] = [];
+    let partialClusters: ContentStrategy["clusters"] = [];
+    let partialGaps: ContentStrategy["gaps"] = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -71,6 +75,13 @@ export default function ContentPage() {
               total: event.total,
               message: event.message,
             });
+          } else if (event.event === "partial") {
+            if (event.type === "calendar") {
+              partialCalendar = event.data || [];
+            } else if (event.type === "clusters") {
+              partialClusters = event.data?.clusters || [];
+              partialGaps = event.data?.gaps || [];
+            }
           } else if (event.event === "result") {
             result = event.strategy as ContentStrategy;
           } else if (event.event === "error") {
@@ -83,7 +94,18 @@ export default function ContentPage() {
     }
 
     if (streamError) throw new Error(streamError);
-    return result;
+
+    // Use full result if available, otherwise build from partials
+    if (result) return result;
+    if (partialCalendar.length > 0 || partialClusters.length > 0) {
+      return {
+        input: data,
+        calendar: partialCalendar,
+        clusters: partialClusters,
+        gaps: partialGaps,
+      } as ContentStrategy;
+    }
+    return null;
   }, []);
 
   const handleGenerate = useCallback(async () => {

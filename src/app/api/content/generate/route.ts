@@ -73,8 +73,13 @@ Generează 3-4 itemi pe săptămână (12-16 total). Fii specific și acționabi
           }
         } catch (err) {
           console.error("Calendar generation error:", err);
-          // Fallback empty calendar
         }
+
+        // Send calendar incrementally
+        sendEvent(controller, encoder, "partial", {
+          type: "calendar",
+          data: calendar,
+        });
 
         // Step 2: Generate topic clusters + gap analysis
         sendEvent(controller, encoder, "progress", {
@@ -120,6 +125,12 @@ Include 4-6 clusters și 3-5 gaps.`;
         } catch (err) {
           console.error("Clusters/gaps generation error:", err);
         }
+
+        // Send clusters + gaps incrementally
+        sendEvent(controller, encoder, "partial", {
+          type: "clusters",
+          data: { clusters, gaps },
+        });
 
         // Step 3: Generate strategy summary
         sendEvent(controller, encoder, "progress", {
