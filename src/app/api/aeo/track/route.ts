@@ -148,12 +148,17 @@ Fii concis și acționabil.`,
           aiInsights = "Nu s-au putut genera insights AI.";
         }
 
-        // Send final result
+        // Send final result (truncate responseContent to keep SSE payload manageable)
+        const trimmedResults = results.map((r) => ({
+          ...r,
+          responseContent: r.responseContent.slice(0, 2000),
+        }));
+
         sendEvent(controller, encoder, "result", {
           analysis: {
             prompt,
             targetUrl: targetUrl || "",
-            platforms: results,
+            platforms: trimmedResults,
             aiInsights,
           },
         });

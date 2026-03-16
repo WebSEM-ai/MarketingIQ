@@ -7,7 +7,7 @@ import VisibilityChart from "@/components/aeo/VisibilityChart";
 import PlatformDetail from "@/components/aeo/PlatformDetail";
 import AEOInsights from "@/components/aeo/AEOInsights";
 import { usePersistedState } from "@/lib/hooks/usePersistedState";
-import type { AEOPlatform, AEOAnalysis } from "@/lib/types/aeo";
+import type { AEOPlatform, AEOAnalysis, PlatformResult } from "@/lib/types/aeo";
 
 interface ScanProgress {
   step: number;
@@ -47,6 +47,7 @@ export default function AEOPage() {
       let buffer = "";
       let result: AEOAnalysis | null = null;
       let streamError: string | null = null;
+      const collectedPlatforms: PlatformResult[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -72,6 +73,8 @@ export default function AEOPage() {
                 message: event.message,
                 platform: event.platform,
               });
+            } else if (event.event === "platform_result") {
+              collectedPlatforms.push(event.result as PlatformResult);
             } else if (event.event === "result") {
               result = event.analysis as AEOAnalysis;
             } else if (event.event === "error") {
@@ -84,7 +87,17 @@ export default function AEOPage() {
       }
 
       if (streamError) throw new Error(streamError);
-      return result;
+
+      // If final result event was parsed, use it; otherwise build from collected platform results
+      if (result) return result;
+      if (collectedPlatforms.length > 0) {
+        return {
+          prompt: p,
+          targetUrl: url || "",
+          platforms: collectedPlatforms,
+        } as AEOAnalysis;
+      }
+      return null;
     },
     []
   );
