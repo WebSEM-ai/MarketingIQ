@@ -16,6 +16,24 @@ const modules = [
     status: "activ",
   },
   {
+    href: "/dashboard/aeo",
+    label: "AEO Tracker",
+    description: "Monitorizează vizibilitatea brandului tău pe motoarele AI: ChatGPT, Perplexity, Claude, Gemini, Grok.",
+    color: "#06b6d4",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="6" />
+        <circle cx="12" cy="12" r="2" />
+        <line x1="12" y1="2" x2="12" y2="6" />
+        <line x1="12" y1="18" x2="12" y2="22" />
+        <line x1="2" y1="12" x2="6" y2="12" />
+        <line x1="18" y1="12" x2="22" y2="12" />
+      </svg>
+    ),
+    status: "activ",
+  },
+  {
     href: "/dashboard/competitors",
     label: "Competitori",
     description: "Monitorizează competitorii, scanează site-uri și detectează schimbări în conținut.",

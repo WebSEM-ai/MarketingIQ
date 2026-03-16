@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 const breadcrumbMap: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/dashboard/prompt-iq": "PromptIQ",
+  "/dashboard/aeo": "AEO Tracker",
   "/dashboard/competitors": "Competitori",
   "/dashboard/trends": "Tendințe",
   "/dashboard/keywords": "Cuvinte Cheie",
@@ -13,6 +14,7 @@ const breadcrumbMap: Record<string, string> = {
 
 const colorMap: Record<string, string> = {
   "/dashboard/prompt-iq": "#3b82f6",
+  "/dashboard/aeo": "#06b6d4",
   "/dashboard/competitors": "#f59e0b",
   "/dashboard/trends": "#22c55e",
   "/dashboard/keywords": "#a855f7",
