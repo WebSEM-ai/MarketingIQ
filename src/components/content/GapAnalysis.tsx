@@ -1,6 +1,7 @@
 "use client";
 
 import type { GapItem } from "@/lib/types/content";
+import SynergyActionButton from "@/components/synergy/SynergyActionButton";
 
 interface GapAnalysisProps {
   gaps: GapItem[];
@@ -47,17 +48,29 @@ export default function GapAnalysis({ gaps }: GapAnalysisProps) {
         {gaps.map((gap, idx) => (
           <div
             key={idx}
-            className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3"
+            className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3 group"
           >
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h4 className="text-sm font-semibold text-white">{gap.area}</h4>
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded border whitespace-nowrap ${
-                  PRIORITY_COLORS[gap.priority] || PRIORITY_COLORS.low
-                }`}
-              >
-                {PRIORITY_LABELS[gap.priority] || gap.priority}
-              </span>
+              <h4 className="text-sm font-semibold text-white flex-1">{gap.area}</h4>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded border whitespace-nowrap ${
+                    PRIORITY_COLORS[gap.priority] || PRIORITY_COLORS.low
+                  }`}
+                >
+                  {PRIORITY_LABELS[gap.priority] || gap.priority}
+                </span>
+                {/* Synergy: research keywords for this gap */}
+                <SynergyActionButton
+                  source="content"
+                  target="keywords"
+                  data={{ seed: gap.area }}
+                  label={gap.area}
+                  icon="keywords"
+                  title="Cercetează cuvinte cheie pentru acest gap"
+                  className="opacity-0 group-hover:opacity-60 hover:!opacity-100"
+                />
+              </div>
             </div>
 
             <p className="text-xs text-gray-400 mb-1.5">{gap.description}</p>

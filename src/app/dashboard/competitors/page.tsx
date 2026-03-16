@@ -9,6 +9,10 @@ import AIInsights from "@/components/competitors/AIInsights";
 import RankingTable from "@/components/competitors/RankingTable";
 import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { CompetitorAnalysis } from "@/lib/types/competitors";
+import { useSynergyReceiver } from "@/lib/synergy/useSynergyReceiver";
+import type { CompetitorsPrefill } from "@/lib/synergy/types";
+import SynergyBanner from "@/components/synergy/SynergyBanner";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ScanProgress {
   step: number;
@@ -23,8 +27,10 @@ export default function CompetitorsPage() {
   const [scanningId, setScanningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
-
   const selected = analyses.find((a) => a.competitor.id === selectedId) || null;
+
+  // Synergy receiver
+  const { incoming, dismiss: dismissSynergy } = useSynergyReceiver("competitors");
 
   const processScanStream = useCallback(
     async (url: string, keywords: string[]) => {
@@ -156,6 +162,15 @@ export default function CompetitorsPage() {
     [scanCompetitor]
   );
 
+  const applySynergy = useCallback(() => {
+    if (!incoming) return;
+    const d = incoming.data as CompetitorsPrefill;
+    if (d.url) {
+      scanCompetitor(d.url, d.keywords || []);
+    }
+    dismissSynergy();
+  }, [incoming, dismissSynergy, scanCompetitor]);
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -183,6 +198,13 @@ export default function CompetitorsPage() {
           <span className="text-xs text-red-400 max-w-xs truncate">{error}</span>
         )}
       </div>
+
+      {/* Synergy Banner */}
+      {incoming && (
+        <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-2">
+          <SynergyBanner payload={incoming} onApply={applySynergy} onDismiss={dismissSynergy} />
+        </div>
+      )}
 
       {/* Progress Bar */}
       {progress && (
@@ -241,25 +263,55 @@ export default function CompetitorsPage() {
         <div className="panel-scroll p-4">
           {selected ? (
             <div className="space-y-4 max-w-3xl">
-              <div className="flex items-center gap-3 pb-3 border-b border-gray-800/30">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                  <span className="text-amber-500 text-sm font-bold">
-                    {selected.competitor.name.charAt(0).toUpperCase()}
-                  </span>
+              <div className="flex items-center justify-between pb-3 border-b border-gray-800/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <span className="text-amber-500 text-sm font-bold">
+                      {selected.competitor.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-sm">
+                      {selected.competitor.name}
+                    </h3>
+                    <a
+                      href={selected.competitor.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-amber-500/70 hover:text-amber-400 transition-colors"
+                    >
+                      {selected.competitor.url}
+                    </a>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-semibold text-sm">
-                    {selected.competitor.name}
-                  </h3>
-                  <a
-                    href={selected.competitor.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-amber-500/70 hover:text-amber-400 transition-colors"
-                  >
-                    {selected.competitor.url}
-                  </a>
-                </div>
+                <SynergyMenu
+                  source="competitors"
+                  targets={[
+                    {
+                      target: "aeo",
+                      data: { prompt: `Ce oferă ${selected.competitor.name}?`, targetUrl: selected.competitor.url },
+                      label: selected.competitor.name,
+                      actionLabel: "Verifică AEO",
+                    },
+                    {
+                      target: "trends",
+                      data: { query: selected.competitor.name },
+                      label: selected.competitor.name,
+                      actionLabel: "Analiză Tendințe",
+                    },
+                    ...(selected.rankings && selected.rankings.length > 0
+                      ? [{
+                          target: "content" as const,
+                          data: {
+                            competitors: selected.competitor.url,
+                            keywords: selected.rankings.map(r => r.keyword),
+                          },
+                          label: selected.competitor.name,
+                          actionLabel: "Strategie Conținut",
+                        }]
+                      : []),
+                  ]}
+                />
               </div>
 
               <SEOReport seo={selected.seo} />

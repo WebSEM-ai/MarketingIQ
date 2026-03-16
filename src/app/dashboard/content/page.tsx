@@ -8,6 +8,10 @@ import GapAnalysis from "@/components/content/GapAnalysis";
 import StrategyInsights from "@/components/content/StrategyInsights";
 import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { ContentInput, ContentStrategy } from "@/lib/types/content";
+import { useSynergyReceiver } from "@/lib/synergy/useSynergyReceiver";
+import type { ContentPrefill } from "@/lib/synergy/types";
+import SynergyBanner from "@/components/synergy/SynergyBanner";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ScanProgress {
   step: number;
@@ -51,6 +55,24 @@ export default function ContentPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = history.find((e) => e.id === selectedId) || null;
+
+  // Synergy receiver
+  const { incoming, dismiss: dismissSynergy } = useSynergyReceiver("content");
+
+  const applySynergy = useCallback(() => {
+    if (!incoming) return;
+    const d = incoming.data as ContentPrefill;
+    setInput((prev) => ({
+      ...prev,
+      ...(d.goals ? { goals: d.goals } : {}),
+      ...(d.business ? { business: d.business } : {}),
+      ...(d.audience ? { audience: d.audience } : {}),
+      ...(d.competitors ? { competitors: d.competitors } : {}),
+      ...(d.keywords ? { existingContent: (prev.existingContent || "") + (prev.existingContent ? "\n" : "") + "Keywords: " + d.keywords.join(", ") } : {}),
+    }));
+    setSelectedId(null);
+    dismissSynergy();
+  }, [incoming, dismissSynergy]);
 
   const processStream = useCallback(async (data: ContentInput) => {
     const res = await fetch("/api/content/generate", {
@@ -223,6 +245,13 @@ export default function ContentPage() {
         </div>
       </div>
 
+      {/* Synergy Banner */}
+      {incoming && (
+        <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-2">
+          <SynergyBanner payload={incoming} onApply={applySynergy} onDismiss={dismissSynergy} />
+        </div>
+      )}
+
       {/* Progress Bar */}
       {progress && (
         <div className="flex-shrink-0 bg-gray-900/80 border-b border-gray-800/50 px-5 py-2.5">
@@ -292,16 +321,37 @@ export default function ContentPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedId(null)}
-                  className="text-gray-500 hover:text-white transition-colors p-1"
-                  title="Închide"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                  <SynergyMenu
+                    source="content"
+                    targets={[
+                      ...(selected.data.calendar?.length > 0
+                        ? [{
+                            target: "keywords" as const,
+                            data: { seed: selected.data.calendar[0].keywords?.[0] || selected.label },
+                            label: selected.label,
+                            actionLabel: "Cercetează Cuvinte Cheie",
+                          }]
+                        : []),
+                      {
+                        target: "trends",
+                        data: { query: selected.label },
+                        label: selected.label,
+                        actionLabel: "Analiză Tendințe",
+                      },
+                    ]}
+                  />
+                  <button
+                    onClick={() => setSelectedId(null)}
+                    className="text-gray-500 hover:text-white transition-colors p-1"
+                    title="Închide"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <ContentCalendar calendar={selected.data.calendar} />

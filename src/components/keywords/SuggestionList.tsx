@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { KeywordSuggestion } from "@/lib/types/keywords";
+import SynergyActionButton from "@/components/synergy/SynergyActionButton";
 
 interface SuggestionListProps {
   suggestions: KeywordSuggestion[];
@@ -50,21 +51,45 @@ export default function SuggestionList({ suggestions }: SuggestionListProps) {
         {suggestions.map((s, i) => {
           const style = SOURCE_STYLES[s.source];
           return (
-            <button
+            <div
               key={`${s.keyword}-${i}`}
-              onClick={() => handleCopy(s.keyword, i)}
               className="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition-colors text-left group"
             >
-              <span className="text-sm text-gray-300 truncate">{s.keyword}</span>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => handleCopy(s.keyword, i)}
+                className="flex-1 min-w-0 text-left"
+              >
+                <span className="text-sm text-gray-300 truncate block">{s.keyword}</span>
+              </button>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded border ${style.bg} ${style.text}`}>
                   {style.label}
                 </span>
-                <span className="text-[10px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {copiedIdx === i ? "✓ copiat" : "click = copiază"}
+                {/* Synergy: Send to Trends */}
+                <SynergyActionButton
+                  source="keywords"
+                  target="trends"
+                  data={{ query: s.keyword }}
+                  label={s.keyword}
+                  icon="trends"
+                  title="Analizează trendul"
+                  className="opacity-0 group-hover:opacity-60 hover:!opacity-100"
+                />
+                {/* Synergy: Send to AEO */}
+                <SynergyActionButton
+                  source="keywords"
+                  target="aeo"
+                  data={{ prompt: s.keyword }}
+                  label={s.keyword}
+                  icon="aeo"
+                  title="Verifică vizibilitate AEO"
+                  className="opacity-0 group-hover:opacity-60 hover:!opacity-100"
+                />
+                <span className="text-[10px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity w-12">
+                  {copiedIdx === i ? "✓ copiat" : ""}
                 </span>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { TopicCluster } from "@/lib/types/content";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface TopicClustersProps {
   clusters: TopicCluster[];
@@ -51,19 +52,39 @@ export default function TopicClusters({ clusters }: TopicClustersProps) {
         {clusters.map((cluster, idx) => (
           <div
             key={idx}
-            className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3"
+            className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3 group"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h4 className="text-sm font-semibold text-white">
+              <h4 className="text-sm font-semibold text-white flex-1">
                 {cluster.pillar}
               </h4>
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded border whitespace-nowrap ${
-                  PRIORITY_COLORS[cluster.priority] || PRIORITY_COLORS.low
-                }`}
-              >
-                {PRIORITY_LABELS[cluster.priority] || cluster.priority}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded border whitespace-nowrap ${
+                    PRIORITY_COLORS[cluster.priority] || PRIORITY_COLORS.low
+                  }`}
+                >
+                  {PRIORITY_LABELS[cluster.priority] || cluster.priority}
+                </span>
+                <SynergyMenu
+                  source="content"
+                  targets={[
+                    {
+                      target: "keywords",
+                      data: { seed: cluster.pillar },
+                      label: cluster.pillar,
+                      actionLabel: "Cercetează Cuvinte Cheie",
+                    },
+                    {
+                      target: "trends",
+                      data: { query: cluster.pillar },
+                      label: cluster.pillar,
+                      actionLabel: "Analiză Tendințe",
+                    },
+                  ]}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                />
+              </div>
             </div>
 
             {/* Subtopics */}

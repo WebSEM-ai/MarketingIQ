@@ -1,6 +1,7 @@
 "use client";
 
 import type { CalendarItem } from "@/lib/types/content";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ContentCalendarProps {
   calendar: CalendarItem[];
@@ -76,19 +77,48 @@ export default function ContentCalendar({ calendar }: ContentCalendarProps) {
               {items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3"
+                  className="bg-gray-800/30 border border-gray-700/30 rounded-lg p-3 group"
                 >
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <h4 className="text-sm font-medium text-white flex-1">
                       {item.title}
                     </h4>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                        TYPE_COLORS[item.type] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                      }`}
-                    >
-                      {TYPE_LABELS[item.type] || item.type}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                          TYPE_COLORS[item.type] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                        }`}
+                      >
+                        {TYPE_LABELS[item.type] || item.type}
+                      </span>
+                      {/* Synergy menu per calendar item */}
+                      <SynergyMenu
+                        source="content"
+                        targets={[
+                          ...(item.keywords?.length > 0
+                            ? [{
+                                target: "keywords" as const,
+                                data: { seed: item.keywords[0] },
+                                label: item.topic,
+                                actionLabel: "Cercetează Cuvinte Cheie",
+                              }]
+                            : []),
+                          {
+                            target: "trends",
+                            data: { query: item.topic },
+                            label: item.topic,
+                            actionLabel: "Analiză Tendințe",
+                          },
+                          {
+                            target: "aeo",
+                            data: { prompt: item.topic },
+                            label: item.topic,
+                            actionLabel: "Verifică AEO",
+                          },
+                        ]}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
                   </div>
 
                   <p className="text-xs text-gray-400 mb-1.5">{item.topic}</p>

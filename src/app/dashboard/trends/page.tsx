@@ -8,6 +8,10 @@ import RegionMap from "@/components/trends/RegionMap";
 import TrendInsights from "@/components/trends/TrendInsights";
 import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { TrendAnalysis } from "@/lib/types/trends";
+import { useSynergyReceiver } from "@/lib/synergy/useSynergyReceiver";
+import type { TrendsPrefill } from "@/lib/synergy/types";
+import SynergyBanner from "@/components/synergy/SynergyBanner";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ScanProgress {
   step: number;
@@ -66,6 +70,17 @@ export default function TrendsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = history.find((e) => e.id === selectedId) || null;
+
+  // Synergy receiver
+  const { incoming, dismiss: dismissSynergy } = useSynergyReceiver("trends");
+
+  const applySynergy = useCallback(() => {
+    if (!incoming) return;
+    const d = incoming.data as TrendsPrefill;
+    if (d.query) setQuery(d.query);
+    setSelectedId(null);
+    dismissSynergy();
+  }, [incoming, dismissSynergy]);
 
   const processStream = useCallback(
     async (q: string, tf: string, co: string) => {
@@ -213,6 +228,13 @@ export default function TrendsPage() {
         </div>
       </div>
 
+      {/* Synergy Banner */}
+      {incoming && (
+        <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-2">
+          <SynergyBanner payload={incoming} onApply={applySynergy} onDismiss={dismissSynergy} />
+        </div>
+      )}
+
       {/* Search Form */}
       <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-3">
         <div className="flex items-center gap-3">
@@ -307,16 +329,46 @@ export default function TrendsPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedId(null)}
-                className="text-gray-500 hover:text-white transition-colors p-1"
-                title="Închide"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <SynergyMenu
+                  source="trends"
+                  targets={[
+                    {
+                      target: "keywords",
+                      data: { seed: selected.query, country: selected.country },
+                      label: selected.query,
+                      actionLabel: "Cercetează Cuvinte Cheie",
+                    },
+                    {
+                      target: "aeo",
+                      data: { prompt: selected.query },
+                      label: selected.query,
+                      actionLabel: "Verifică AEO",
+                    },
+                    ...(selected.data.relatedQueries?.filter(q => q.type === "rising").length > 0
+                      ? [{
+                          target: "content" as const,
+                          data: {
+                            goals: "trending topics",
+                            keywords: selected.data.relatedQueries.filter(q => q.type === "rising").map(q => q.query),
+                          },
+                          label: selected.query,
+                          actionLabel: "Strategie din Tendințe",
+                        }]
+                      : []),
+                  ]}
+                />
+                <button
+                  onClick={() => setSelectedId(null)}
+                  className="text-gray-500 hover:text-white transition-colors p-1"
+                  title="Închide"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <TrendChart data={selected.data.interest.timeline} query={selected.data.query} />

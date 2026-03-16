@@ -1,6 +1,7 @@
 "use client";
 
 import type { KeywordCluster } from "@/lib/types/keywords";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ClusterViewProps {
   clusters: KeywordCluster[];
@@ -38,10 +39,28 @@ export default function ClusterView({ clusters }: ClusterViewProps) {
               className="border border-gray-800/50 rounded-lg p-3"
             >
               <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-sm font-medium text-white">{cluster.name}</h4>
+                <h4 className="text-sm font-medium text-white flex-1">{cluster.name}</h4>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded border ${style.bg} ${style.text}`}>
                   {style.label}
                 </span>
+                {/* Synergy menu: send cluster to Content or AEO */}
+                <SynergyMenu
+                  source="keywords"
+                  targets={[
+                    {
+                      target: "content",
+                      data: { goals: cluster.intent, keywords: cluster.keywords },
+                      label: cluster.name,
+                      actionLabel: "Strategie Conținut",
+                    },
+                    {
+                      target: "aeo",
+                      data: { prompt: cluster.name },
+                      label: cluster.name,
+                      actionLabel: "Verifică AEO",
+                    },
+                  ]}
+                />
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {cluster.keywords.map((kw, j) => (

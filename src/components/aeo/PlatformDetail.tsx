@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PlatformResult, AEOPlatform } from "@/lib/types/aeo";
+import SynergyActionButton from "@/components/synergy/SynergyActionButton";
 
 interface PlatformDetailProps {
   result: PlatformResult;
@@ -100,7 +101,7 @@ export default function PlatformDetail({ result, targetUrl }: PlatformDetailProp
                   return (
                     <div
                       key={i}
-                      className={`flex items-center gap-2 px-2 py-1 rounded text-xs ${
+                      className={`flex items-center gap-2 px-2 py-1 rounded text-xs group/url ${
                         isTarget
                           ? "bg-green-500/10 border border-green-500/20"
                           : "bg-gray-800/30"
@@ -112,10 +113,20 @@ export default function PlatformDetail({ result, targetUrl }: PlatformDetailProp
                         </svg>
                       )}
                       <span
-                        className={`truncate ${isTarget ? "text-green-400" : "text-gray-400"}`}
+                        className={`truncate flex-1 ${isTarget ? "text-green-400" : "text-gray-400"}`}
                       >
                         {url}
                       </span>
+                      {/* Synergy: analyze this URL as competitor */}
+                      <SynergyActionButton
+                        source="aeo"
+                        target="competitors"
+                        data={{ url }}
+                        label={url}
+                        icon="competitors"
+                        title="Analizează ca competitor"
+                        className="opacity-0 group-hover/url:opacity-60 hover:!opacity-100 flex-shrink-0"
+                      />
                     </div>
                   );
                 })}

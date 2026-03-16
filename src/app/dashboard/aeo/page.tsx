@@ -6,8 +6,13 @@ import PlatformOverview from "@/components/aeo/PlatformOverview";
 import VisibilityChart from "@/components/aeo/VisibilityChart";
 import PlatformDetail from "@/components/aeo/PlatformDetail";
 import AEOInsights from "@/components/aeo/AEOInsights";
+import AEOComparison from "@/components/aeo/AEOComparison";
 import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { AEOPlatform, AEOAnalysis, PlatformResult } from "@/lib/types/aeo";
+import { useSynergyReceiver } from "@/lib/synergy/useSynergyReceiver";
+import type { AEOPrefill } from "@/lib/synergy/types";
+import SynergyBanner from "@/components/synergy/SynergyBanner";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ScanProgress {
   step: number;
@@ -60,8 +65,23 @@ export default function AEOPage() {
   const [progress, setProgress] = useState<ScanProgress | null>(null);
   const [history, setHistory] = usePersistedState<AEOEntry[]>("aeo-history", []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [compareId, setCompareId] = useState<string | null>(null);
 
   const selected = history.find((e) => e.id === selectedId) || null;
+  const compareEntry = compareId ? history.find((e) => e.id === compareId) || null : null;
+
+  // Synergy receiver
+  const { incoming, dismiss: dismissSynergy } = useSynergyReceiver("aeo");
+
+  const applySynergy = useCallback(() => {
+    if (!incoming) return;
+    const d = incoming.data as AEOPrefill;
+    if (d.prompt) setPrompt(d.prompt);
+    if (d.targetUrl) setTargetUrl(d.targetUrl);
+    setSelectedId(null);
+    setCompareId(null);
+    dismissSynergy();
+  }, [incoming, dismissSynergy]);
 
   const processStream = useCallback(
     async (p: string, url: string, plats: AEOPlatform[]) => {
@@ -221,9 +241,32 @@ export default function AEOPage() {
         </div>
       </div>
 
+      {/* Synergy Banner */}
+      {incoming && (
+        <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-2">
+          <SynergyBanner payload={incoming} onApply={applySynergy} onDismiss={dismissSynergy} />
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 min-h-0 panel-scroll">
         <div className="p-5 space-y-4 max-w-4xl mx-auto">
+          {/* AEO Comparison View */}
+          {selected && compareEntry && (
+            <div>
+              <button
+                onClick={() => setCompareId(null)}
+                className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1 mb-3"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Înapoi la detalii
+              </button>
+              <AEOComparison entryA={selected} entryB={compareEntry} />
+            </div>
+          )}
+
           {/* Input form — always visible when not viewing results */}
           {!selected && (
             <>
@@ -267,7 +310,7 @@ export default function AEOPage() {
           )}
 
           {/* Results Detail */}
-          {selected && !isLoading && (
+          {selected && !isLoading && !compareEntry && (
             <>
               {/* Result header */}
               <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800/50 rounded-xl px-4 py-3">
@@ -287,16 +330,71 @@ export default function AEOPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedId(null)}
-                  className="text-gray-500 hover:text-white transition-colors p-1"
-                  title="Închide"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Compare button */}
+                  {history.length > 1 && (
+                    <div className="relative group/compare">
+                      <button
+                        className="text-xs text-cyan-500 hover:text-cyan-400 transition-colors px-2 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20"
+                      >
+                        Compară cu...
+                      </button>
+                      <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover/compare:block bg-gray-900 border border-gray-700/50 rounded-lg shadow-xl py-1 min-w-[200px]">
+                        {history.filter(e => e.id !== selectedId).map((entry) => (
+                          <button
+                            key={entry.id}
+                            onClick={() => setCompareId(entry.id)}
+                            className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800/50 transition-colors"
+                          >
+                            <p className="truncate">&ldquo;{entry.prompt}&rdquo;</p>
+                            <p className="text-[10px] text-gray-500">{formatDate(entry.timestamp)}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <SynergyMenu
+                    source="aeo"
+                    targets={[
+                      {
+                        target: "keywords",
+                        data: { seed: selected.prompt },
+                        label: selected.prompt,
+                        actionLabel: "Cercetează Cuvinte Cheie",
+                      },
+                      {
+                        target: "trends",
+                        data: { query: selected.prompt },
+                        label: selected.prompt,
+                        actionLabel: "Analiză Tendințe",
+                      },
+                      ...(selected.targetUrl
+                        ? [{
+                            target: "competitors" as const,
+                            data: { url: selected.targetUrl },
+                            label: selected.targetUrl,
+                            actionLabel: "Analiză Competitor",
+                          }]
+                        : []),
+                      {
+                        target: "content",
+                        data: { goals: "AEO optimization", keywords: [selected.prompt] },
+                        label: selected.prompt,
+                        actionLabel: "Strategie Conținut",
+                      },
+                    ]}
+                  />
+                  <button
+                    onClick={() => setSelectedId(null)}
+                    className="text-gray-500 hover:text-white transition-colors p-1"
+                    title="Închide"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <PlatformOverview platforms={selected.data.platforms} />

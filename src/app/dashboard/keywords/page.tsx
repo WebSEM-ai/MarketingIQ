@@ -8,6 +8,10 @@ import RankingResults from "@/components/keywords/RankingResults";
 import KeywordInsights from "@/components/keywords/KeywordInsights";
 import { usePersistedState } from "@/lib/hooks/usePersistedState";
 import type { KeywordAnalysis } from "@/lib/types/keywords";
+import { useSynergyReceiver } from "@/lib/synergy/useSynergyReceiver";
+import type { KeywordsPrefill } from "@/lib/synergy/types";
+import SynergyBanner from "@/components/synergy/SynergyBanner";
+import SynergyMenu from "@/components/synergy/SynergyMenu";
 
 interface ScanProgress {
   step: number;
@@ -58,6 +62,19 @@ export default function KeywordsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = history.find((e) => e.id === selectedId) || null;
+
+  // Synergy receiver
+  const { incoming, dismiss: dismissSynergy } = useSynergyReceiver("keywords");
+
+  const applySynergy = useCallback(() => {
+    if (!incoming) return;
+    const d = incoming.data as KeywordsPrefill;
+    if (d.seed) setSeed(d.seed);
+    if (d.domain) setDomain(d.domain);
+    if (d.country) setCountry(d.country);
+    setSelectedId(null);
+    dismissSynergy();
+  }, [incoming, dismissSynergy]);
 
   const processStream = useCallback(
     async (s: string, d: string, co: string) => {
@@ -200,6 +217,13 @@ export default function KeywordsPage() {
         </div>
       </div>
 
+      {/* Synergy Banner */}
+      {incoming && (
+        <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-2">
+          <SynergyBanner payload={incoming} onApply={applySynergy} onDismiss={dismissSynergy} />
+        </div>
+      )}
+
       {/* Search Form — visible when not viewing results */}
       {!selected && (
         <div className="flex-shrink-0 border-b border-gray-800/50 px-5 py-3">
@@ -265,16 +289,41 @@ export default function KeywordsPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedId(null)}
-                className="text-gray-500 hover:text-white transition-colors p-1"
-                title="Închide"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <SynergyMenu
+                  source="keywords"
+                  targets={[
+                    {
+                      target: "trends",
+                      data: { query: selected.seed },
+                      label: selected.seed,
+                      actionLabel: "Analiză Tendințe",
+                    },
+                    {
+                      target: "content",
+                      data: { keywords: selected.data.suggestions?.map(s => s.keyword) || [] },
+                      label: selected.seed,
+                      actionLabel: "Strategie Conținut",
+                    },
+                    {
+                      target: "aeo",
+                      data: { prompt: selected.seed },
+                      label: selected.seed,
+                      actionLabel: "Verifică AEO",
+                    },
+                  ]}
+                />
+                <button
+                  onClick={() => setSelectedId(null)}
+                  className="text-gray-500 hover:text-white transition-colors p-1"
+                  title="Închide"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <SuggestionList suggestions={selected.data.suggestions} />
