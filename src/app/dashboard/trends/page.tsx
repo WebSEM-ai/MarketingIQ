@@ -15,6 +15,15 @@ interface ScanProgress {
   message: string;
 }
 
+interface TrendsEntry {
+  id: string;
+  timestamp: string;
+  query: string;
+  timeframe: string;
+  country: string;
+  data: TrendAnalysis;
+}
+
 const TIMEFRAME_OPTIONS = [
   { label: "Ultimele 3 luni", value: "today 3-m" },
   { label: "Ultimul an", value: "today 12-m" },
@@ -28,14 +37,35 @@ const COUNTRY_OPTIONS = [
   { label: "UK", value: "GB" },
 ];
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ro-RO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getTimeframeLabel(value: string) {
+  return TIMEFRAME_OPTIONS.find((o) => o.value === value)?.label || value;
+}
+
+function getCountryLabel(value: string) {
+  return COUNTRY_OPTIONS.find((o) => o.value === value)?.label || value;
+}
+
 export default function TrendsPage() {
-  const [query, setQuery] = usePersistedState("trends-query", "");
+  const [query, setQuery] = useState("");
   const [timeframe, setTimeframe] = useState("today 12-m");
   const [country, setCountry] = useState("RO");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ScanProgress | null>(null);
-  const [analysis, setAnalysis] = usePersistedState<TrendAnalysis | null>("trends-analysis", null);
+  const [history, setHistory] = usePersistedState<TrendsEntry[]>("trends-history", []);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selected = history.find((e) => e.id === selectedId) || null;
 
   const processStream = useCallback(
     async (q: string, tf: string, co: string) => {
@@ -108,14 +138,25 @@ export default function TrendsPage() {
     try {
       const result = await processStream(query.trim(), timeframe, country);
       if (!result) throw new Error("Nu s-a primit rezultatul.");
-      setAnalysis(result);
+
+      const entry: TrendsEntry = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        query: query.trim(),
+        timeframe,
+        country,
+        data: result,
+      };
+      setHistory((prev) => [entry, ...prev]);
+      setSelectedId(entry.id);
+      setQuery("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută.");
     } finally {
       setIsLoading(false);
       setProgress(null);
     }
-  }, [query, timeframe, country, processStream]);
+  }, [query, timeframe, country, processStream, setHistory]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -124,6 +165,14 @@ export default function TrendsPage() {
       }
     },
     [handleAnalyze, isLoading]
+  );
+
+  const deleteEntry = useCallback(
+    (id: string) => {
+      setHistory((prev) => prev.filter((e) => e.id !== id));
+      if (selectedId === id) setSelectedId(null);
+    },
+    [selectedId, setHistory]
   );
 
   return (
@@ -140,10 +189,28 @@ export default function TrendsPage() {
             <span className="text-emerald-500">Analiză</span>
             <span className="text-white"> Tendințe</span>
           </h2>
+          {history.length > 0 && (
+            <span className="text-xs text-gray-500">
+              {history.length} analize
+            </span>
+          )}
         </div>
-        {error && (
-          <span className="text-xs text-red-400 max-w-xs truncate">{error}</span>
-        )}
+        <div className="flex items-center gap-3">
+          {error && (
+            <span className="text-xs text-red-400 max-w-xs truncate">{error}</span>
+          )}
+          {selected && (
+            <button
+              onClick={() => setSelectedId(null)}
+              className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Istoric
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search Form */}
@@ -222,26 +289,126 @@ export default function TrendsPage() {
 
       {/* Content */}
       <div className="flex-1 min-h-0 panel-scroll">
-        {analysis ? (
+        {selected ? (
+          /* Detail View */
           <div className="p-5 space-y-4 max-w-4xl mx-auto">
-            {/* Chart */}
-            <TrendChart data={analysis.interest.timeline} query={analysis.query} />
-
-            {/* Related Queries + Topics - 2 columns */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <RelatedQueries queries={analysis.relatedQueries} />
-              <RelatedTopics topics={analysis.relatedTopics} />
+            {/* Result header */}
+            <div className="flex items-center justify-between bg-gray-900/50 border border-gray-800/50 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">&ldquo;{selected.query}&rdquo;</p>
+                  <p className="text-xs text-gray-500">
+                    {getCountryLabel(selected.country)} &middot; {getTimeframeLabel(selected.timeframe)} &middot; {formatDate(selected.timestamp)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedId(null)}
+                className="text-gray-500 hover:text-white transition-colors p-1"
+                title="Închide"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
 
-            {/* Region Map */}
-            <RegionMap regions={analysis.regions} />
+            <TrendChart data={selected.data.interest.timeline} query={selected.data.query} />
 
-            {/* AI Insights */}
-            {analysis.aiInsights && (
-              <TrendInsights insights={analysis.aiInsights} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <RelatedQueries queries={selected.data.relatedQueries} />
+              <RelatedTopics topics={selected.data.relatedTopics} />
+            </div>
+
+            <RegionMap regions={selected.data.regions} />
+
+            {selected.data.aiInsights && (
+              <TrendInsights insights={selected.data.aiInsights} />
             )}
           </div>
+        ) : history.length > 0 ? (
+          /* History Cards */
+          <div className="p-5 max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Istoric Analize ({history.length})
+              </h3>
+              {history.length > 1 && (
+                <button
+                  onClick={() => {
+                    if (confirm("Ștergi tot istoricul?")) {
+                      setHistory([]);
+                      setSelectedId(null);
+                    }
+                  }}
+                  className="text-xs text-gray-600 hover:text-red-400 transition-colors"
+                >
+                  Șterge tot
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {history.map((entry) => (
+                <button
+                  key={entry.id}
+                  onClick={() => setSelectedId(entry.id)}
+                  className="group text-left bg-gray-900/50 hover:bg-gray-800/70 border border-gray-800/50 hover:border-emerald-500/30 rounded-xl p-4 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">
+                        &ldquo;{entry.query}&rdquo;
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {getCountryLabel(entry.country)} &middot; {getTimeframeLabel(entry.timeframe)}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        {formatDate(entry.timestamp)}
+                      </p>
+                    </div>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteEntry(entry.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition-all p-1 cursor-pointer"
+                      title="Șterge"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                      </svg>
+                    </div>
+                  </div>
+                  {entry.data.interest.timeline.length > 0 && (
+                    <div className="mt-3 flex items-end gap-px h-8">
+                      {entry.data.interest.timeline
+                        .filter((_, i, arr) => i % Math.max(1, Math.floor(arr.length / 20)) === 0)
+                        .map((point, i) => {
+                          const max = Math.max(...entry.data.interest.timeline.map((p) => p.value), 1);
+                          const h = Math.max(2, (point.value / max) * 32);
+                          return (
+                            <div
+                              key={i}
+                              className="flex-1 bg-emerald-500/30 rounded-sm min-w-[2px]"
+                              style={{ height: `${h}px` }}
+                            />
+                          );
+                        })}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : (
+          /* Empty State */
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-20 h-20 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center mb-4">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
