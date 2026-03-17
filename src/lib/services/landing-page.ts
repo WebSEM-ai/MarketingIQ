@@ -12,7 +12,7 @@ export async function scrapePage(url: string): Promise<string> {
       url,
       render_js: false,
       return_page_markdown: true,
-    }, 20000);
+    }, 12000);
     const text = extractText(result);
     if (text && text.length > 100) return text;
   } catch (err) {
@@ -25,7 +25,7 @@ export async function scrapePage(url: string): Promise<string> {
       url,
       render_js: true,
       return_page_markdown: true,
-    }, 30000);
+    }, 15000);
     const text = extractText(result);
     if (text && text.length > 100) return text;
   } catch (err) {
@@ -62,7 +62,7 @@ export async function getOnPageSEO(url: string): Promise<Record<string, unknown>
   try {
     const result = await callTool("onpage-seo", "single_onpage_checker", {
       url,
-    }, 25000);
+    }, 15000);
     return (result as Record<string, unknown>) || {};
   } catch (err) {
     console.log("OnPage SEO check failed:", err instanceof Error ? err.message : err);

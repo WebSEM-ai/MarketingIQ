@@ -206,7 +206,15 @@ Răspunde în format JSON STRICT (fără text înainte sau după):
           },
         });
       } catch (err) {
-        sendEvent(controller, encoder, "error", { error: err instanceof Error ? err.message : "Eroare la analiză." });
+        // Always send result (not error) so client never hangs
+        sendEvent(controller, encoder, "result", {
+          analysis: {
+            url: url.trim(), page_title: "", overall_score: 0, ux_score: 0, technical_score: 0,
+            ux_elements: [], trackers: [], schema_markup: [], technical_elements: [],
+            priority_actions: [], strengths: [],
+            summary: `Eroare: ${err instanceof Error ? err.message : "Eroare necunoscută la analiză."}`,
+          },
+        });
       } finally {
         controller.close();
       }

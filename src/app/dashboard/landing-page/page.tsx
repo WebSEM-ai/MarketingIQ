@@ -209,6 +209,7 @@ export default function LandingPagePage() {
       const decoder = new TextDecoder();
       let buffer = "";
       let result: LandingPageAnalysis | null = null;
+      let streamError: string | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -219,15 +220,15 @@ export default function LandingPagePage() {
         for (const chunk of chunks) {
           const tr = chunk.trim();
           if (!tr.startsWith("data: ")) continue;
-          try {
-            const ev = JSON.parse(tr.slice(6));
-            if (ev.event === "progress") setProgress({ step: ev.step, total: ev.total, message: ev.message });
-            else if (ev.event === "result") result = ev.analysis as LandingPageAnalysis;
-            else if (ev.event === "error") throw new Error(ev.error);
-          } catch { /* incomplete chunk */ }
+          let ev: Record<string, unknown>;
+          try { ev = JSON.parse(tr.slice(6)); } catch { continue; }
+          if (ev.event === "progress") setProgress({ step: ev.step as number, total: ev.total as number, message: ev.message as string });
+          else if (ev.event === "result") result = ev.analysis as LandingPageAnalysis;
+          else if (ev.event === "error") streamError = (ev.error as string) || "Eroare la analiză.";
         }
       }
-      if (!result) throw new Error("Nu s-a primit rezultatul.");
+      if (streamError) throw new Error(streamError);
+      if (!result) throw new Error("Nu s-a primit rezultatul. Posibil timeout pe server — încearcă din nou.");
 
       const entry: LandingPageEntry = {
         id: crypto.randomUUID(),
