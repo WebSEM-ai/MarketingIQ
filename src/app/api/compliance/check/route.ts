@@ -13,7 +13,7 @@ async function scrapeUrl(url: string): Promise<string> {
     url,
     render_js: false,
     return_page_markdown: true,
-  }, 15000);
+  }, 25000);
 
   if (typeof result === "string") return result;
   const data = result as Record<string, unknown>;
@@ -42,19 +42,40 @@ export async function POST(request: Request) {
           pageContent = await scrapeUrl(url.trim());
         } catch (err) {
           console.error("Scrape error:", err);
-          sendEvent(controller, encoder, "error", { error: "Nu am putut accesa pagina. Verifică URL-ul." });
+          // Don't abort — send a result with error info so frontend doesn't hang
+          sendEvent(controller, encoder, "result", {
+            analysis: {
+              url: url.trim(), productType: type, pageLength: 0,
+              compliance: {
+                compliance_score: 0, risk_level: "necunoscut", product_name: url.trim(),
+                issues: [], missing_elements: [], positive_aspects: [],
+                summary: `Nu am putut accesa pagina: ${err instanceof Error ? err.message : "eroare necunoscută"}. Verifică URL-ul și încearcă din nou.`,
+                action_plan: "Verifică dacă URL-ul este corect și accesibil public.",
+              },
+            },
+          });
           controller.close();
           return;
         }
 
         if (!pageContent || pageContent.length < 50) {
-          sendEvent(controller, encoder, "error", { error: "Pagina nu conține suficient conținut pentru analiză." });
+          sendEvent(controller, encoder, "result", {
+            analysis: {
+              url: url.trim(), productType: type, pageLength: pageContent.length,
+              compliance: {
+                compliance_score: 0, risk_level: "necunoscut", product_name: url.trim(),
+                issues: [], missing_elements: [], positive_aspects: [],
+                summary: "Pagina nu conține suficient conținut text pentru analiză. Posibil site cu JavaScript rendering sau acces restricționat.",
+                action_plan: "Încearcă un alt URL sau o pagină cu conținut text vizibil.",
+              },
+            },
+          });
           controller.close();
           return;
         }
 
         // Truncate to avoid token limits
-        const truncated = pageContent.slice(0, 12000);
+        const truncated = pageContent.slice(0, 8000);
 
         // Step 2: Compliance analysis
         sendEvent(controller, encoder, "progress", { step: 2, total: 3, message: "Analizez conformitatea regulamentară..." });
@@ -186,7 +207,18 @@ Răspunde în format JSON STRICT (fără text înainte sau după):
         sendEvent(controller, encoder, "progress", { step: 3, total: 3, message: "Finalizez raportul..." });
 
         let parsed: Record<string, unknown> | null = null;
-        if (complianceResult) {
+        if (!complianceResult) {
+          parsed = {
+            compliance_score: 50,
+            risk_level: "necunoscut",
+            product_name: url.trim(),
+            issues: [],
+            missing_elements: [],
+            positive_aspects: [],
+            summary: "Analiza AI nu a putut fi generată. Pagina a fost extrasă cu succes, dar procesarea a eșuat. Încearcă din nou.",
+            action_plan: "Reîncearcă analiza. Dacă problema persistă, verifică dacă pagina conține suficient text descriptiv.",
+          };
+        } else if (complianceResult) {
           try {
             let jsonText = complianceResult.trim();
             const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
