@@ -128,6 +128,22 @@ const modules = [
     storageKey: "miq:youtube-history",
     status: "activ",
   },
+  {
+    href: "/dashboard/rank-tracking",
+    id: "rank-tracking" as ModuleId,
+    label: "Rank Tracking",
+    description: "Monitorizează pozițiile în Google, SERP preview și analiză AI SEO.",
+    color: "#10b981",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
+    storageKey: "miq:rank-history",
+    status: "activ",
+  },
 ];
 
 interface ModuleStats {
@@ -269,6 +285,19 @@ export default function DashboardPage() {
         allActivity.push({ moduleId: "youtube", moduleLabel: "YouTube", color: "#ef4444", label: e.query, timestamp: e.timestamp });
       });
       if (yt.length > 0) analyzedModules["youtube"] = yt.map((e: { query: string }) => e.query);
+    } catch { /* empty */ }
+
+    // Rank Tracking
+    try {
+      const rank = JSON.parse(localStorage.getItem("miq:rank-history") || "[]");
+      newStats["rank-tracking"] = {
+        count: rank.length,
+        lastTimestamp: rank[0]?.timestamp,
+        metric: rank[0] ? `${rank[0].top10Count}/${rank[0].keywordCount} Top 10` : undefined,
+      };
+      rank.slice(0, 5).forEach((e: { domain: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "rank-tracking", moduleLabel: "Rank", color: "#10b981", label: e.domain, timestamp: e.timestamp });
+      });
     } catch { /* empty */ }
 
     setStats(newStats);

@@ -1,4 +1,4 @@
-export type ModuleId = "keywords" | "trends" | "aeo" | "competitors" | "content" | "shopping" | "youtube";
+export type ModuleId = "keywords" | "trends" | "aeo" | "competitors" | "content" | "shopping" | "youtube" | "rank-tracking";
 
 export const MODULE_LABELS: Record<ModuleId, string> = {
   keywords: "Cuvinte Cheie",
@@ -8,6 +8,7 @@ export const MODULE_LABELS: Record<ModuleId, string> = {
   content: "Strategie Conținut",
   shopping: "Google Shopping",
   youtube: "YouTube Research",
+  "rank-tracking": "Rank Tracking",
 };
 
 export const MODULE_ROUTES: Record<ModuleId, string> = {
@@ -18,6 +19,7 @@ export const MODULE_ROUTES: Record<ModuleId, string> = {
   content: "/dashboard/content",
   shopping: "/dashboard/shopping",
   youtube: "/dashboard/youtube",
+  "rank-tracking": "/dashboard/rank-tracking",
 };
 
 export const MODULE_COLORS: Record<ModuleId, string> = {
@@ -28,6 +30,7 @@ export const MODULE_COLORS: Record<ModuleId, string> = {
   content: "#f43f5e",
   shopping: "#f97316",
   youtube: "#ef4444",
+  "rank-tracking": "#10b981",
 };
 
 // Data payloads per target module
@@ -69,6 +72,12 @@ export interface YouTubePrefill {
   country?: string;
 }
 
+export interface RankTrackingPrefill {
+  domain: string;
+  keywords?: string[];
+  country?: string;
+}
+
 export type SynergyData =
   | { target: "keywords"; data: KeywordsPrefill }
   | { target: "trends"; data: TrendsPrefill }
@@ -76,12 +85,13 @@ export type SynergyData =
   | { target: "competitors"; data: CompetitorsPrefill }
   | { target: "content"; data: ContentPrefill }
   | { target: "shopping"; data: ShoppingPrefill }
-  | { target: "youtube"; data: YouTubePrefill };
+  | { target: "youtube"; data: YouTubePrefill }
+  | { target: "rank-tracking"; data: RankTrackingPrefill };
 
 export interface SynergyPayload {
   source: ModuleId;
   target: ModuleId;
-  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill | YouTubePrefill;
-  label: string; // human-readable description e.g. "best SEO tools 2026"
+  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill | YouTubePrefill | RankTrackingPrefill;
+  label: string;
   timestamp: number;
 }
