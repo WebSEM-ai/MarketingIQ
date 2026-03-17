@@ -1,4 +1,4 @@
-export type ModuleId = "keywords" | "trends" | "aeo" | "competitors" | "content" | "shopping";
+export type ModuleId = "keywords" | "trends" | "aeo" | "competitors" | "content" | "shopping" | "youtube";
 
 export const MODULE_LABELS: Record<ModuleId, string> = {
   keywords: "Cuvinte Cheie",
@@ -7,6 +7,7 @@ export const MODULE_LABELS: Record<ModuleId, string> = {
   competitors: "Competitori",
   content: "Strategie Conținut",
   shopping: "Google Shopping",
+  youtube: "YouTube Research",
 };
 
 export const MODULE_ROUTES: Record<ModuleId, string> = {
@@ -16,6 +17,7 @@ export const MODULE_ROUTES: Record<ModuleId, string> = {
   competitors: "/dashboard/competitors",
   content: "/dashboard/content",
   shopping: "/dashboard/shopping",
+  youtube: "/dashboard/youtube",
 };
 
 export const MODULE_COLORS: Record<ModuleId, string> = {
@@ -25,6 +27,7 @@ export const MODULE_COLORS: Record<ModuleId, string> = {
   competitors: "#f59e0b",
   content: "#f43f5e",
   shopping: "#f97316",
+  youtube: "#ef4444",
 };
 
 // Data payloads per target module
@@ -61,18 +64,24 @@ export interface ShoppingPrefill {
   country?: string;
 }
 
+export interface YouTubePrefill {
+  query: string;
+  country?: string;
+}
+
 export type SynergyData =
   | { target: "keywords"; data: KeywordsPrefill }
   | { target: "trends"; data: TrendsPrefill }
   | { target: "aeo"; data: AEOPrefill }
   | { target: "competitors"; data: CompetitorsPrefill }
   | { target: "content"; data: ContentPrefill }
-  | { target: "shopping"; data: ShoppingPrefill };
+  | { target: "shopping"; data: ShoppingPrefill }
+  | { target: "youtube"; data: YouTubePrefill };
 
 export interface SynergyPayload {
   source: ModuleId;
   target: ModuleId;
-  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill;
+  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill | YouTubePrefill;
   label: string; // human-readable description e.g. "best SEO tools 2026"
   timestamp: number;
 }

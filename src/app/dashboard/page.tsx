@@ -113,6 +113,21 @@ const modules = [
     storageKey: "miq:shopping-history",
     status: "activ",
   },
+  {
+    href: "/dashboard/youtube",
+    id: "youtube" as ModuleId,
+    label: "YouTube Research",
+    description: "Caută videoclipuri, canale și Shorts — analizează competiția cu AI.",
+    color: "#ef4444",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.13C5.12 19.56 12 19.56 12 19.56s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" />
+        <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+      </svg>
+    ),
+    storageKey: "miq:youtube-history",
+    status: "activ",
+  },
 ];
 
 interface ModuleStats {
@@ -240,6 +255,20 @@ export default function DashboardPage() {
         allActivity.push({ moduleId: "shopping", moduleLabel: "Shopping", color: "#f97316", label: e.query, timestamp: e.timestamp });
       });
       if (shop.length > 0) analyzedModules["shopping"] = shop.map((e: { query: string }) => e.query);
+    } catch { /* empty */ }
+
+    // YouTube
+    try {
+      const yt = JSON.parse(localStorage.getItem("miq:youtube-history") || "[]");
+      newStats["youtube"] = {
+        count: yt.length,
+        lastTimestamp: yt[0]?.timestamp,
+        metric: yt[0] ? `${yt[0].videoCount} videoclipuri` : undefined,
+      };
+      yt.slice(0, 5).forEach((e: { query: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "youtube", moduleLabel: "YouTube", color: "#ef4444", label: e.query, timestamp: e.timestamp });
+      });
+      if (yt.length > 0) analyzedModules["youtube"] = yt.map((e: { query: string }) => e.query);
     } catch { /* empty */ }
 
     setStats(newStats);

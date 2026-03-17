@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { ModuleId, KeywordsPrefill, TrendsPrefill, AEOPrefill, CompetitorsPrefill, ContentPrefill, ShoppingPrefill } from "@/lib/synergy/types";
+import type { ModuleId, KeywordsPrefill, TrendsPrefill, AEOPrefill, CompetitorsPrefill, ContentPrefill, ShoppingPrefill, YouTubePrefill } from "@/lib/synergy/types";
 import { MODULE_LABELS, MODULE_COLORS } from "@/lib/synergy/types";
 import { sendToModule } from "@/lib/synergy/actions";
 
 interface SynergyTarget {
   target: ModuleId;
-  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill;
+  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill | YouTubePrefill;
   label: string;
   actionLabel?: string;
 }
