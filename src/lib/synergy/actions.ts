@@ -1,4 +1,4 @@
-import type { ModuleId, SynergyPayload, KeywordsPrefill, TrendsPrefill, AEOPrefill, CompetitorsPrefill, ContentPrefill } from "./types";
+import type { ModuleId, SynergyPayload, KeywordsPrefill, TrendsPrefill, AEOPrefill, CompetitorsPrefill, ContentPrefill, ShoppingPrefill } from "./types";
 import { MODULE_ROUTES } from "./types";
 
 const STORAGE_KEY = "miq:synergy-prefill";
@@ -7,7 +7,7 @@ const TTL_MS = 5 * 60 * 1000; // 5 minutes
 export function sendToModule(
   source: ModuleId,
   target: ModuleId,
-  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill,
+  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill,
   label: string
 ): string {
   const payload: SynergyPayload = {

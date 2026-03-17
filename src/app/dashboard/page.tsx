@@ -97,6 +97,22 @@ const modules = [
     storageKey: "miq:content-history",
     status: "activ",
   },
+  {
+    href: "/dashboard/shopping",
+    id: "shopping" as ModuleId,
+    label: "Google Shopping",
+    description: "Caută produse, compară prețuri și analizează piața cu AI.",
+    color: "#f97316",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 01-8 0" />
+      </svg>
+    ),
+    storageKey: "miq:shopping-history",
+    status: "activ",
+  },
 ];
 
 interface ModuleStats {
@@ -210,6 +226,20 @@ export default function DashboardPage() {
       comp.slice(0, 5).forEach((e: { competitor: { name: string }; scan: { scannedAt: string } }) => {
         allActivity.push({ moduleId: "competitors", moduleLabel: "Competitori", color: "#f59e0b", label: e.competitor.name, timestamp: e.scan?.scannedAt || "" });
       });
+    } catch { /* empty */ }
+
+    // Shopping
+    try {
+      const shop = JSON.parse(localStorage.getItem("miq:shopping-history") || "[]");
+      newStats["shopping"] = {
+        count: shop.length,
+        lastTimestamp: shop[0]?.timestamp,
+        metric: shop[0] ? `${shop[0].productCount} produse` : undefined,
+      };
+      shop.slice(0, 5).forEach((e: { query: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "shopping", moduleLabel: "Shopping", color: "#f97316", label: e.query, timestamp: e.timestamp });
+      });
+      if (shop.length > 0) analyzedModules["shopping"] = shop.map((e: { query: string }) => e.query);
     } catch { /* empty */ }
 
     setStats(newStats);
