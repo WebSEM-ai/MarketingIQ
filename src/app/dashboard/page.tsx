@@ -67,6 +67,18 @@ const modules = [
     icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>),
     storageKey: "miq:rank-history", status: "activ",
   },
+  {
+    href: "/dashboard/meta-ads", id: "meta-ads" as const, label: "Meta Ads",
+    description: "Campanii Facebook & Instagram cu analiză AI.", color: "#3b82f6",
+    icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" /></svg>),
+    storageKey: "miq:meta-ads-history", status: "activ",
+  },
+  {
+    href: "/dashboard/google-ads", id: "google-ads" as const, label: "Google Ads",
+    description: "Campanii, keywords și metrici cu analiză AI.", color: "#eab308",
+    icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>),
+    storageKey: "miq:google-ads-history", status: "activ",
+  },
 ];
 
 /* ── Types ── */
@@ -256,11 +268,31 @@ export default function DashboardPage() {
       if (yt.length > 0) { analyzedModules["youtube"] = yt.map((e: { query: string }) => e.query); modulesUsed++; total += yt.length; }
     } catch { /* */ }
 
+    /* ── Meta Ads ── */
+    try {
+      const meta = JSON.parse(localStorage.getItem("miq:meta-ads-history") || "[]");
+      newStats["meta-ads"] = { count: meta.length, lastTimestamp: meta[0]?.timestamp, metric: meta[0] ? `${meta[0].activeCount} active` : undefined };
+      meta.slice(0, 3).forEach((e: { accountId: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "meta-ads", moduleLabel: "Meta Ads", color: "#3b82f6", label: e.accountId, timestamp: e.timestamp });
+      });
+      if (meta.length > 0) { modulesUsed++; total += meta.length; }
+    } catch { /* */ }
+
+    /* ── Google Ads ── */
+    try {
+      const gads = JSON.parse(localStorage.getItem("miq:google-ads-history") || "[]");
+      newStats["google-ads"] = { count: gads.length, lastTimestamp: gads[0]?.timestamp, metric: gads[0] ? `${gads[0].totalClicks} clicks` : undefined };
+      gads.slice(0, 3).forEach((e: { customerId: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "google-ads", moduleLabel: "Google Ads", color: "#eab308", label: e.customerId, timestamp: e.timestamp });
+      });
+      if (gads.length > 0) { modulesUsed++; total += gads.length; }
+    } catch { /* */ }
+
     /* ── Compute overall health score ── */
     const pillarScores = newPillars.map((p) => p.score);
     const activePillars = pillarScores.filter((s) => s > 0);
     const avgPillarScore = activePillars.length > 0 ? activePillars.reduce((a, b) => a + b, 0) / activePillars.length : 0;
-    const coverageBonus = Math.min(20, (modulesUsed / 9) * 20);
+    const coverageBonus = Math.min(20, (modulesUsed / 11) * 20);
     const overall = Math.round(Math.min(100, avgPillarScore * 0.8 + coverageBonus));
 
     setStats(newStats);
@@ -337,7 +369,7 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-gray-500">Analize total</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-white">{activeModules}<span className="text-gray-600 text-sm">/9</span></p>
+                  <p className="text-lg font-bold text-white">{activeModules}<span className="text-gray-600 text-sm">/11</span></p>
                   <p className="text-[10px] text-gray-500">Module active</p>
                 </div>
                 <div>
