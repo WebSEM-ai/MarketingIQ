@@ -38,6 +38,18 @@ export async function POST(request: Request) {
           });
           articles = result.articles;
           totalResults = result.totalResults;
+
+          // Fallback: if no results with time filter, retry without it
+          if (articles.length === 0 && timePeriod) {
+            const fallback = await searchNews(query.trim(), {
+              country: country || "ro",
+              language: language || "ro",
+              sortBy: sortBy || "relevance",
+              num: 30,
+            });
+            articles = fallback.articles;
+            totalResults = fallback.totalResults;
+          }
         } catch (err) {
           console.error("News search error:", err);
         }
