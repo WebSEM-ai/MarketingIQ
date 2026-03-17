@@ -11,6 +11,7 @@ const breadcrumbMap: Record<string, string> = {
   "/dashboard/keywords": "Cuvinte Cheie",
   "/dashboard/content": "Conținut",
   "/dashboard/landing-page": "Landing Page Analyzer",
+  "/dashboard/tracking-audit": "Tracking Audit",
 };
 
 const colorMap: Record<string, string> = {
@@ -21,6 +22,7 @@ const colorMap: Record<string, string> = {
   "/dashboard/keywords": "#a855f7",
   "/dashboard/content": "#f43f5e",
   "/dashboard/landing-page": "#ec4899",
+  "/dashboard/tracking-audit": "#d97706",
 };
 
 export default function TopBar() {

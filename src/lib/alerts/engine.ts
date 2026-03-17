@@ -516,6 +516,91 @@ function ruleLandingPageRank(landingPages: LandingPageEntry[], rank: RankEntry[]
   return alerts;
 }
 
+interface TrackingAuditAlertEntry {
+  url: string;
+  timestamp: string;
+  overallScore: number;
+  verdict: string;
+  platformsDetected: string[];
+  data?: {
+    gdpr_violations?: string[];
+    tracking_before_consent?: string[];
+    platform_scores?: Record<string, number>;
+  };
+}
+
+function ruleTrackingGDPRPreChecked(tracking: TrackingAuditAlertEntry[]): Alert[] {
+  const alerts: Alert[] = [];
+  if (tracking.length === 0) return alerts;
+
+  for (const t of tracking) {
+    const violations = t.data?.gdpr_violations || [];
+    const hasPreChecked = violations.some(v =>
+      v.toLowerCase().includes("pre-bif") || v.toLowerCase().includes("pre-check") || v.toLowerCase().includes("preselect")
+    );
+    if (hasPreChecked) {
+      alerts.push({
+        id: "tracking-gdpr-prechecked",
+        severity: "risk",
+        title: "Cookie-uri non-esențiale pre-bifate",
+        description: `Bannerul GDPR de pe ${t.url.replace(/https?:\/\//, "").split("/")[0]} are categoriile de marketing bifate implicit — ilegal conform GDPR.`,
+        modules: ["tracking-audit"],
+        action: "Dezactivează cookie-urile pre-bifate imediat",
+        actionRoute: "/dashboard/tracking-audit",
+        timestamp: Date.now(),
+      });
+      break;
+    }
+  }
+
+  return alerts;
+}
+
+function ruleTrackingBeforeConsent(tracking: TrackingAuditAlertEntry[]): Alert[] {
+  const alerts: Alert[] = [];
+  if (tracking.length === 0) return alerts;
+
+  for (const t of tracking) {
+    const beforeConsent = t.data?.tracking_before_consent || [];
+    if (beforeConsent.length > 0) {
+      alerts.push({
+        id: "tracking-before-consent",
+        severity: "risk",
+        title: "Tracking activ înainte de consimțământ",
+        description: `${beforeConsent.length} pixeli se încarcă înainte ca utilizatorul să accepte cookies pe ${t.url.replace(/https?:\/\//, "").split("/")[0]}.`,
+        modules: ["tracking-audit"],
+        action: "Mută scripturile de tracking după mecanismul de consimțământ",
+        actionRoute: "/dashboard/tracking-audit",
+        timestamp: Date.now(),
+      });
+      break;
+    }
+  }
+
+  return alerts;
+}
+
+function ruleTrackingGoogleAds(tracking: TrackingAuditAlertEntry[], gads: GoogleAdsEntry[]): Alert[] {
+  const alerts: Alert[] = [];
+  if (tracking.length === 0 || gads.length === 0) return alerts;
+
+  const weakTracking = tracking.filter(t => t.overallScore < 50);
+  if (weakTracking.length > 0 && gads.some(g => g.campaigns?.some(c => c.status === "ENABLED"))) {
+    alerts.push({
+      id: "tracking-gads-roas-risk",
+      severity: "risk",
+      title: "Tracking slab + campanii Google Ads active",
+      description: `Tracking-ul are scor ${weakTracking[0].overallScore}/100 dar ai campanii Google Ads active. ROAS-ul raportat nu este fiabil — pierzi date de conversie.`,
+      modules: ["tracking-audit", "google-ads"],
+      action: "Corectează tracking-ul înainte de a evalua performanța campaniilor",
+      actionRoute: "/dashboard/tracking-audit",
+      timestamp: Date.now(),
+    });
+  }
+
+  return alerts;
+}
+
 /* ── MAIN ENGINE ── */
 
 export function generateAlerts(): Alert[] {
@@ -531,6 +616,7 @@ export function generateAlerts(): Alert[] {
   const competitors = readStore<CompetitorEntry>("miq:competitors-analyses");
   const content = readStore<ContentEntry>("miq:content-history");
   const landingPages = readStore<LandingPageEntry>("miq:landing-page-history");
+  const trackingAudits = readStore<TrackingAuditAlertEntry>("miq:tracking-audit-history");
 
   const allAlerts: Alert[] = [
     ...ruleAEOCompliance(aeo, compliance),
@@ -544,6 +630,9 @@ export function generateAlerts(): Alert[] {
     ...ruleLandingPageCompliance(landingPages, compliance),
     ...ruleLandingPageGoogleAds(landingPages, gads),
     ...ruleLandingPageRank(landingPages, rank),
+    ...ruleTrackingGDPRPreChecked(trackingAudits),
+    ...ruleTrackingBeforeConsent(trackingAudits),
+    ...ruleTrackingGoogleAds(trackingAudits, gads),
   ];
 
   // Deduplicate by id

@@ -74,6 +74,12 @@ const modules = [
     storageKey: "miq:landing-page-history", status: "activ",
   },
   {
+    href: "/dashboard/tracking-audit", id: "tracking-audit" as ModuleId, label: "Tracking Audit",
+    description: "Audit Meta Pixel, GA4, GTM, TikTok, GDPR, DataLayer.", color: "#d97706",
+    icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>),
+    storageKey: "miq:tracking-audit-history", status: "activ",
+  },
+  {
     href: "/dashboard/compliance", id: "compliance" as const, label: "Compliance",
     description: "Verifică conformitatea produselor pharma/naturiste cu regulamentele EU/RO.", color: "#14b8a6",
     icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>),
@@ -314,6 +320,16 @@ export default function DashboardPage() {
         allActivity.push({ moduleId: "google-ads", moduleLabel: "Google Ads", color: "#eab308", label: e.customerId, timestamp: e.timestamp });
       });
       if (gads.length > 0) { modulesUsed++; total += gads.length; }
+    } catch { /* */ }
+
+    /* ── Tracking Audit ── */
+    try {
+      const ta = JSON.parse(localStorage.getItem("miq:tracking-audit-history") || "[]");
+      newStats["tracking-audit"] = { count: ta.length, lastTimestamp: ta[0]?.timestamp, metric: ta[0] ? `Score: ${ta[0].overallScore}` : undefined };
+      ta.slice(0, 3).forEach((e: { url: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "tracking-audit", moduleLabel: "Tracking", color: "#d97706", label: e.url, timestamp: e.timestamp });
+      });
+      if (ta.length > 0) { modulesUsed++; total += ta.length; }
     } catch { /* */ }
 
     /* ── Landing Page ── */
