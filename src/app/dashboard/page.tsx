@@ -68,6 +68,12 @@ const modules = [
     storageKey: "miq:rank-history", status: "activ",
   },
   {
+    href: "/dashboard/news", id: "news" as const, label: "Google News",
+    description: "Monitorizare știri, mențiuni și analiză media AI.", color: "#6366f1",
+    icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2" /></svg>),
+    storageKey: "miq:news-history", status: "activ",
+  },
+  {
     href: "/dashboard/meta-ads", id: "meta-ads" as const, label: "Meta Ads",
     description: "Campanii Facebook & Instagram cu analiză AI.", color: "#3b82f6",
     icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" /></svg>),
@@ -268,6 +274,16 @@ export default function DashboardPage() {
       if (yt.length > 0) { analyzedModules["youtube"] = yt.map((e: { query: string }) => e.query); modulesUsed++; total += yt.length; }
     } catch { /* */ }
 
+    /* ── News ── */
+    try {
+      const news = JSON.parse(localStorage.getItem("miq:news-history") || "[]");
+      newStats["news"] = { count: news.length, lastTimestamp: news[0]?.timestamp, metric: news[0] ? `${news[0].articleCount} articole` : undefined };
+      news.slice(0, 3).forEach((e: { query: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "news", moduleLabel: "News", color: "#6366f1", label: e.query, timestamp: e.timestamp });
+      });
+      if (news.length > 0) { modulesUsed++; total += news.length; }
+    } catch { /* */ }
+
     /* ── Meta Ads ── */
     try {
       const meta = JSON.parse(localStorage.getItem("miq:meta-ads-history") || "[]");
@@ -292,7 +308,7 @@ export default function DashboardPage() {
     const pillarScores = newPillars.map((p) => p.score);
     const activePillars = pillarScores.filter((s) => s > 0);
     const avgPillarScore = activePillars.length > 0 ? activePillars.reduce((a, b) => a + b, 0) / activePillars.length : 0;
-    const coverageBonus = Math.min(20, (modulesUsed / 11) * 20);
+    const coverageBonus = Math.min(20, (modulesUsed / 12) * 20);
     const overall = Math.round(Math.min(100, avgPillarScore * 0.8 + coverageBonus));
 
     setStats(newStats);
@@ -369,7 +385,7 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-gray-500">Analize total</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-white">{activeModules}<span className="text-gray-600 text-sm">/11</span></p>
+                  <p className="text-lg font-bold text-white">{activeModules}<span className="text-gray-600 text-sm">/12</span></p>
                   <p className="text-[10px] text-gray-500">Module active</p>
                 </div>
                 <div>
