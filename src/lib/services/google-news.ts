@@ -39,16 +39,28 @@ export async function searchNews(
   const searchInfo = (raw.search_information || {}) as Record<string, unknown>;
 
   const articles: NewsArticle[] = Array.isArray(results)
-    ? results.map((r, idx) => ({
-        position: (r.position as number) || idx + 1,
-        title: (r.title as string) || "",
-        link: (r.link as string) || "",
-        source: (r.source as string) || "",
-        date: (r.date as string) || "",
-        isoDate: r.iso_date as string | undefined,
-        snippet: r.snippet as string | undefined,
-        thumbnail: typeof r.thumbnail === "string" && !r.thumbnail.startsWith("data:") ? r.thumbnail : undefined,
-      }))
+    ? results.map((r, idx) => {
+        // Extract thumbnail, skip base64 data URIs (too large for SSE)
+        let thumb: string | undefined;
+        if (typeof r.thumbnail === "string" && !r.thumbnail.startsWith("data:")) {
+          thumb = r.thumbnail;
+        } else if (r.thumbnail && typeof r.thumbnail === "object") {
+          const t = r.thumbnail as Record<string, string>;
+          const url = t.static || t.rich || t.src || "";
+          if (url && !url.startsWith("data:")) thumb = url;
+        }
+
+        return {
+          position: (r.position as number) || idx + 1,
+          title: (r.title as string) || "",
+          link: (r.link as string) || "",
+          source: (r.source as string) || "",
+          date: (r.date as string) || "",
+          isoDate: r.iso_date as string | undefined,
+          snippet: typeof r.snippet === "string" ? r.snippet.slice(0, 300) : undefined,
+          thumbnail: thumb,
+        };
+      })
     : [];
 
   return {

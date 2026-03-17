@@ -80,7 +80,9 @@ export default function NewsPage() {
             if (ev.event === "progress") setProgress({ step: ev.step, total: ev.total, message: ev.message });
             else if (ev.event === "result") result = ev.analysis;
             else if (ev.event === "error") throw new Error(ev.error);
-          } catch (e) { if (e instanceof Error && e.message !== "Unexpected") throw e; }
+          } catch {
+            // Incomplete JSON chunk, skip
+          }
         }
       }
       if (!result) throw new Error("Nu s-a primit rezultatul.");
