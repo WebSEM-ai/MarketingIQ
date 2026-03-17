@@ -74,13 +74,27 @@ export async function searchShorts(
   const results = (raw.shorts || raw.results || []) as Array<Record<string, unknown>>;
   if (!Array.isArray(results)) return [];
 
-  return results.map((s) => ({
-    id: (s.id as string) || (s.video_id as string) || "",
-    title: (s.title as string) || "",
-    link: (s.link as string) || "",
-    views: (s.views as number) ?? null,
-    thumbnail: (s.thumbnail as string) || undefined,
-  }));
+  return results.map((s) => {
+    const thumb = s.thumbnail;
+    let thumbnailUrl: string | undefined;
+    if (typeof thumb === "string") {
+      thumbnailUrl = thumb;
+    } else if (thumb && typeof thumb === "object") {
+      const t = thumb as Record<string, string>;
+      thumbnailUrl = t.static || t.rich || undefined;
+    }
+    // Fallback: construct from video ID
+    if (!thumbnailUrl && (s.id || s.video_id)) {
+      thumbnailUrl = `https://i.ytimg.com/vi/${s.id || s.video_id}/hq720.jpg`;
+    }
+    return {
+      id: (s.id as string) || (s.video_id as string) || "",
+      title: (s.title as string) || "",
+      link: (s.link as string) || "",
+      views: (s.views as number) ?? null,
+      thumbnail: thumbnailUrl,
+    };
+  });
 }
 
 export async function getVideoDetails(
