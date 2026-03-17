@@ -68,6 +68,12 @@ const modules = [
     storageKey: "miq:rank-history", status: "activ",
   },
   {
+    href: "/dashboard/landing-page", id: "landing-page" as ModuleId, label: "Landing Page",
+    description: "Analizează UX/UI + technical health pentru landing pages.", color: "#ec4899",
+    icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>),
+    storageKey: "miq:landing-page-history", status: "activ",
+  },
+  {
     href: "/dashboard/compliance", id: "compliance" as const, label: "Compliance",
     description: "Verifică conformitatea produselor pharma/naturiste cu regulamentele EU/RO.", color: "#14b8a6",
     icon: (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>),
@@ -308,6 +314,16 @@ export default function DashboardPage() {
         allActivity.push({ moduleId: "google-ads", moduleLabel: "Google Ads", color: "#eab308", label: e.customerId, timestamp: e.timestamp });
       });
       if (gads.length > 0) { modulesUsed++; total += gads.length; }
+    } catch { /* */ }
+
+    /* ── Landing Page ── */
+    try {
+      const lp = JSON.parse(localStorage.getItem("miq:landing-page-history") || "[]");
+      newStats["landing-page"] = { count: lp.length, lastTimestamp: lp[0]?.timestamp, metric: lp[0] ? `Score: ${lp[0].overallScore}` : undefined };
+      lp.slice(0, 3).forEach((e: { url: string; timestamp: string }) => {
+        allActivity.push({ moduleId: "landing-page", moduleLabel: "Landing Page", color: "#ec4899", label: e.url, timestamp: e.timestamp });
+      });
+      if (lp.length > 0) { modulesUsed++; total += lp.length; }
     } catch { /* */ }
 
     /* ── Compute overall health score ── */

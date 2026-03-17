@@ -1,4 +1,4 @@
-export type ModuleId = "keywords" | "trends" | "aeo" | "competitors" | "content" | "shopping" | "youtube" | "rank-tracking";
+export type ModuleId = "keywords" | "trends" | "aeo" | "competitors" | "content" | "shopping" | "youtube" | "rank-tracking" | "landing-page";
 
 export const MODULE_LABELS: Record<ModuleId, string> = {
   keywords: "Cuvinte Cheie",
@@ -9,6 +9,7 @@ export const MODULE_LABELS: Record<ModuleId, string> = {
   shopping: "Google Shopping",
   youtube: "YouTube Research",
   "rank-tracking": "Rank Tracking",
+  "landing-page": "Landing Page",
 };
 
 export const MODULE_ROUTES: Record<ModuleId, string> = {
@@ -20,6 +21,7 @@ export const MODULE_ROUTES: Record<ModuleId, string> = {
   shopping: "/dashboard/shopping",
   youtube: "/dashboard/youtube",
   "rank-tracking": "/dashboard/rank-tracking",
+  "landing-page": "/dashboard/landing-page",
 };
 
 export const MODULE_COLORS: Record<ModuleId, string> = {
@@ -31,6 +33,7 @@ export const MODULE_COLORS: Record<ModuleId, string> = {
   shopping: "#f97316",
   youtube: "#ef4444",
   "rank-tracking": "#10b981",
+  "landing-page": "#ec4899",
 };
 
 // Data payloads per target module
@@ -78,6 +81,10 @@ export interface RankTrackingPrefill {
   country?: string;
 }
 
+export interface LandingPagePrefill {
+  url: string;
+}
+
 export type SynergyData =
   | { target: "keywords"; data: KeywordsPrefill }
   | { target: "trends"; data: TrendsPrefill }
@@ -86,12 +93,13 @@ export type SynergyData =
   | { target: "content"; data: ContentPrefill }
   | { target: "shopping"; data: ShoppingPrefill }
   | { target: "youtube"; data: YouTubePrefill }
-  | { target: "rank-tracking"; data: RankTrackingPrefill };
+  | { target: "rank-tracking"; data: RankTrackingPrefill }
+  | { target: "landing-page"; data: LandingPagePrefill };
 
 export interface SynergyPayload {
   source: ModuleId;
   target: ModuleId;
-  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill | YouTubePrefill | RankTrackingPrefill;
+  data: KeywordsPrefill | TrendsPrefill | AEOPrefill | CompetitorsPrefill | ContentPrefill | ShoppingPrefill | YouTubePrefill | RankTrackingPrefill | LandingPagePrefill;
   label: string;
   timestamp: number;
 }

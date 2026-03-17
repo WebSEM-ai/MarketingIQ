@@ -65,3 +65,13 @@ aside {
 aside nav a span {
   transition: opacity 0.2s ease;
 }
+
+/* Alert bar progress animation */
+@keyframes alert-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.animate-alert-progress {
+  animation: alert-progress linear forwards;
+}

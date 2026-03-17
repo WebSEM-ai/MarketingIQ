@@ -10,6 +10,7 @@ const breadcrumbMap: Record<string, string> = {
   "/dashboard/trends": "Tendințe",
   "/dashboard/keywords": "Cuvinte Cheie",
   "/dashboard/content": "Conținut",
+  "/dashboard/landing-page": "Landing Page Analyzer",
 };
 
 const colorMap: Record<string, string> = {
@@ -19,6 +20,7 @@ const colorMap: Record<string, string> = {
   "/dashboard/trends": "#22c55e",
   "/dashboard/keywords": "#a855f7",
   "/dashboard/content": "#f43f5e",
+  "/dashboard/landing-page": "#ec4899",
 };
 
 export default function TopBar() {
